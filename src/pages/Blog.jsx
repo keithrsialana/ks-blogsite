@@ -1,99 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import PostList from "../components/PostList";
 import { supabase } from "../supabase";
 
-const adminEmail = import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase();
-
-export default function Blog() {
+export default function Blog({ isAdmin }) {
   const [count, setCount] = useState(10);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [draft, setDraft] = useState({ title: "", content: "", hidden: false });
   const [saving, setSaving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadSession() {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (!active) return;
-
-        if (error) setAuthError(error.message);
-        setIsAdmin(
-          Boolean(
-            adminEmail &&
-              data.session?.user.email?.toLowerCase() === adminEmail
-          )
-        );
-      } catch (error) {
-        if (active) setAuthError(error.message || "Unable to check admin access.");
-      } finally {
-        if (active) setAuthLoading(false);
-      }
-    }
-
-    loadSession();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAdmin(
-        Boolean(
-          adminEmail && session?.user.email?.toLowerCase() === adminEmail
-        )
-      );
-    });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  async function signIn(event) {
-    event.preventDefault();
-    setAuthError("");
-
-    if (!adminEmail) {
-      setAuthError("Set VITE_ADMIN_EMAIL before signing in.");
-      return;
-    }
-
-    if (email.trim().toLowerCase() !== adminEmail) {
-      setAuthError("This account is not allowed to manage posts.");
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-      if (error) setAuthError(error.message);
-      else setPassword("");
-    } catch (error) {
-      setAuthError(error.message || "Unable to sign in.");
-    }
-  }
-
-  async function signOut() {
-    setAuthError("");
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      setEditorOpen(false);
-      setEditingId(null);
-    } catch (error) {
-      setAuthError(error.message || "Unable to sign out.");
-    }
-  }
 
   function startNewPost() {
     setEditingId(null);
@@ -160,48 +76,12 @@ export default function Blog() {
     <section>
       <h1>Keith's Blog</h1>
 
-      {authLoading ? (
-        <p>Checking admin access...</p>
-      ) : isAdmin ? (
+      {isAdmin && (
         <div style={{ marginBottom: "1rem" }}>
           <button type="button" onClick={startNewPost}>
             Create post
-          </button>{" "}
-          <button type="button" onClick={signOut}>
-            Sign out
           </button>
         </div>
-      ) : (
-        <form onSubmit={signIn} style={{ marginBottom: "1rem" }}>
-          <h2>Admin sign in</h2>
-          {!adminEmail && (
-            <p role="alert">
-              Admin sign-in is not configured. Add VITE_ADMIN_EMAIL to your
-              project&apos;s .env file, then restart the dev server.
-            </p>
-          )}
-          <label>
-            Email{" "}
-            <input
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>{" "}
-          <label>
-            Password{" "}
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>{" "}
-          <button type="submit">Sign in</button>
-        </form>
       )}
 
       {isAdmin && editorOpen && (
@@ -262,10 +142,16 @@ export default function Blog() {
 
       <label>
         Show latest{" "}
-        <select value={count} onChange={(e) => setCount(Number(e.target.value))}>
+        <select
+          value={count ?? "all"}
+          onChange={(event) =>
+            setCount(event.target.value === "all" ? null : Number(event.target.value))
+          }
+        >
           <option value={10}>10 posts</option>
           <option value={20}>20 posts</option>
           <option value={50}>50 posts</option>
+          {isAdmin && <option value="all">All posts</option>}
         </select>
       </label>
 

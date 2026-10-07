@@ -24,6 +24,11 @@ create policy "Public can read visible posts"
 on public.post for select to anon, authenticated
 using (hidden = false);
 
+drop policy if exists "Admin can read all posts" on public.post;
+create policy "Admin can read all posts"
+on public.post for select to authenticated
+using (lower(auth.jwt() ->> 'email') = lower('you@example.com'));
+
 drop policy if exists "Admin can manage posts" on public.post;
 create policy "Admin can manage posts"
 on public.post for all to authenticated

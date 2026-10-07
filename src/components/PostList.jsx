@@ -23,9 +23,9 @@ export default function PostList({
         let query = supabase
           .from("post")
           .select("*, photo_item(*)")
-          .order("created_at", { ascending: false })
-          .limit(limit);
+          .order("created_at", { ascending: false });
 
+        if (limit !== null) query = query.limit(limit);
         if (!isAdmin) query = query.eq("hidden", false);
 
         const { data, error: fetchError } = await query;

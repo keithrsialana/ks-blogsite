@@ -1,18 +1,181 @@
+import { useEffect, useState } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import Home from "./pages/Home";
 import Blog from "./pages/Blog";
+import { supabase } from "./supabase";
+
+const adminEmail = import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase();
 
 export default function App() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
+  const [signInOpen, setSignInOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSession() {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (!active) return;
+        if (error) setAuthError(error.message);
+        setIsAdmin(
+          Boolean(
+            adminEmail &&
+              data.session?.user.email?.toLowerCase() === adminEmail
+          )
+        );
+      } catch (error) {
+        if (active) setAuthError(error.message || "Unable to check admin access.");
+      } finally {
+        if (active) setAuthLoading(false);
+      }
+    }
+
+    loadSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAdmin(
+        Boolean(adminEmail && session?.user.email?.toLowerCase() === adminEmail)
+      );
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  async function signIn(event) {
+    event.preventDefault();
+    setAuthError("");
+
+    if (!adminEmail) {
+      setAuthError("Set VITE_ADMIN_EMAIL in your .env file, then restart the dev server.");
+      return;
+    }
+
+    if (email.trim().toLowerCase() !== adminEmail) {
+      setAuthError("This account is not allowed to manage posts.");
+      return;
+    }
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error) setAuthError(error.message);
+      else {
+        setPassword("");
+        setSignInOpen(false);
+      }
+    } catch (error) {
+      setAuthError(error.message || "Unable to sign in.");
+    }
+  }
+
+  async function signOut() {
+    setAuthError("");
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setSignInOpen(false);
+      setPassword("");
+    } catch (error) {
+      setAuthError(error.message || "Unable to sign out.");
+    }
+  }
+
   return (
     <>
-      <nav style={{ display: "flex", gap: "1rem", padding: "1rem" }}>
-        <Link to="/">Home</Link>
-        <Link to="/blog">Blog</Link>
+      <nav
+        style={{
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "1rem",
+          padding: "1rem",
+        }}
+      >
+        <div style={{ display: "flex", gap: "1rem" }}>
+          <Link to="/">Home</Link>
+          <Link to="/blog">Blog</Link>
+        </div>
+        <div style={{ marginLeft: "auto" }}>
+          {authLoading ? (
+            <span>Checking admin access...</span>
+          ) : isAdmin ? (
+            <button type="button" onClick={signOut}>
+              Sign out
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setSignInOpen((open) => !open);
+                setAuthError("");
+              }}
+              aria-expanded={signInOpen}
+            >
+              {signInOpen ? "Cancel sign in" : "Admin sign in"}
+            </button>
+          )}
+        </div>
       </nav>
+      {signInOpen && !isAdmin && (
+        <form
+          onSubmit={signIn}
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "end",
+            gap: "0.75rem",
+            padding: "0 1rem 1rem",
+          }}
+        >
+          <label>
+            Email
+            <input
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+          </label>
+          <button type="submit">Sign in</button>
+          {authError && (
+            <p role="alert" style={{ flexBasis: "100%", margin: 0 }}>
+              {authError}
+            </p>
+          )}
+        </form>
+      )}
       <main style={{ padding: "1rem", maxWidth: 800, margin: "0 auto" }}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/blog" element={<Blog />} />
+          <Route
+            path="/blog"
+            element={
+              <Blog key={isAdmin ? "admin" : "visitor"} isAdmin={isAdmin} />
+            }
+          />
         </Routes>
       </main>
     </>
