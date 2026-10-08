@@ -7,7 +7,7 @@ A React + Vite blog backed by Supabase. Visitors can read published posts. The c
 1. In Supabase Authentication, create the admin user and disable public sign-ups.
 2. Copy `.env.example` to `.env` and fill in the Supabase project URL, anon/publishable key, and the admin user's email. Do not put a `service_role` key in the frontend.
 3. In the Supabase SQL editor, run the policies below after replacing `you@example.com` with the same admin email. These policies assume `photo_item` has a `post_id` foreign key to `post`; adjust that column name if your schema differs.
-4. Remove any existing broad policies that allow anonymous or non-admin writes to `post`. PostgreSQL combines permissive policies with OR, so an old write policy could override these restrictions.
+4. Create a public Supabase Storage bucket named `post-images`. Remove any existing broad policies that allow anonymous or non-admin writes to `post`, `photo_item`, or the `post-images` bucket. PostgreSQL combines permissive policies with OR, so an old write policy could override these restrictions.
 
 ```sql
 alter table public.post enable row level security;
@@ -17,7 +17,8 @@ grant select on public.post to anon, authenticated;
 grant insert, update, delete on public.post to authenticated;
 revoke insert, update, delete on public.post from anon;
 grant select on public.photo_item to anon, authenticated;
-revoke insert, update, delete on public.photo_item from anon, authenticated;
+grant insert, delete on public.photo_item to authenticated;
+revoke insert, update, delete on public.photo_item from anon;
 
 drop policy if exists "Public can read visible posts" on public.post;
 create policy "Public can read visible posts"
@@ -47,9 +48,40 @@ using (
   )
   or lower(auth.jwt() ->> 'email') = lower('you@example.com')
 );
+
+drop policy if exists "Admin can manage post photos" on public.photo_item;
+create policy "Admin can manage post photos"
+on public.photo_item for all to authenticated
+using (lower(auth.jwt() ->> 'email') = lower('you@example.com'))
+with check (lower(auth.jwt() ->> 'email') = lower('you@example.com'));
+
+insert into storage.buckets (id, name, public)
+values ('post-images', 'post-images', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "Public can read post images" on storage.objects;
+create policy "Public can read post images"
+on storage.objects for select to public
+using (bucket_id = 'post-images');
+
+drop policy if exists "Admin can upload post images" on storage.objects;
+create policy "Admin can upload post images"
+on storage.objects for insert to authenticated
+with check (
+  bucket_id = 'post-images'
+  and lower(auth.jwt() ->> 'email') = lower('you@example.com')
+);
+
+drop policy if exists "Admin can delete post images" on storage.objects;
+create policy "Admin can delete post images"
+on storage.objects for delete to authenticated
+using (
+  bucket_id = 'post-images'
+  and lower(auth.jwt() ->> 'email') = lower('you@example.com')
+);
 ```
 
-The email check in the UI only controls which editor controls are shown. Row Level Security is what enforces write access, so keep these database policies in place. Existing objects in Supabase Storage are unaffected; this editor manages post text and visibility, not image uploads.
+The email check in the UI only controls which editor controls are shown. Row Level Security and Storage policies enforce write access, so keep these policies in place. The post editor uploads selected images to the public `post-images` bucket using randomized SHA-256 filenames and saves each image path and its `post_id` in `photo_item`.
 
 ## Development
 

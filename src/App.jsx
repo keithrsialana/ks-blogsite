@@ -3,16 +3,27 @@ import { Routes, Route, Link } from "react-router-dom";
 import Home from "./pages/Home";
 import Blog from "./pages/Blog";
 import { supabase } from "./supabase";
+import "./App.css";
 
 const adminEmail = import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase();
+const themeStorageKey = "ks-blogsite-theme";
 
 export default function App() {
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = window.localStorage.getItem(themeStorageKey);
+    return savedTheme === "dark" ? "dark" : "light";
+  });
   const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
   const [signInOpen, setSignInOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem(themeStorageKey, theme);
+  }, [theme]);
 
   useEffect(() => {
     let active = true;
@@ -94,29 +105,35 @@ export default function App() {
 
   return (
     <>
-      <nav
-        style={{
-          display: "flex",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "1rem",
-          padding: "1rem",
-        }}
-      >
-        <div style={{ display: "flex", gap: "1rem" }}>
+      <nav className="site-nav">
+        <div className="nav-links">
           <Link to="/">Home</Link>
           <Link to="/blog">Blog</Link>
         </div>
-        <div style={{ marginLeft: "auto" }}>
+        <div className="nav-actions">
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() =>
+              setTheme((currentTheme) =>
+                currentTheme === "light" ? "dark" : "light"
+              )
+            }
+            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          >
+            {theme === "light" ? "☀️" : "🌑"}
+          </button>
           {authLoading ? (
             <span>Checking admin access...</span>
           ) : isAdmin ? (
-            <button type="button" onClick={signOut}>
+            <button type="button" className="sign-out-button" onClick={signOut}>
               Sign out
             </button>
           ) : (
             <button
               type="button"
+              className={`sign-in-toggle${signInOpen ? " cancel-sign-in" : ""}`}
               onClick={() => {
                 setSignInOpen((open) => !open);
                 setAuthError("");
@@ -131,15 +148,9 @@ export default function App() {
       {signInOpen && !isAdmin && (
         <form
           onSubmit={signIn}
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "end",
-            gap: "0.75rem",
-            padding: "0 1rem 1rem",
-          }}
+          className="sign-in-form"
         >
-          <label>
+          <label className="form-field">
             Email
             <input
               type="email"
@@ -149,7 +160,7 @@ export default function App() {
               required
             />
           </label>
-          <label>
+          <label className="form-field">
             Password
             <input
               type="password"
@@ -160,14 +171,10 @@ export default function App() {
             />
           </label>
           <button type="submit">Sign in</button>
-          {authError && (
-            <p role="alert" style={{ flexBasis: "100%", margin: 0 }}>
-              {authError}
-            </p>
-          )}
+          {authError && <p role="alert" className="form-error">{authError}</p>}
         </form>
       )}
-      <main style={{ padding: "1rem", maxWidth: 800, margin: "0 auto" }}>
+      <main className="page-shell">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route
