@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../supabase";
+import {
+  fetchPosts,
+  getPostImageUrl,
+} from "../controllers/supabaseController";
 
 function PostImageCarousel({ images }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -7,9 +10,7 @@ function PostImageCarousel({ images }) {
   if (images.length === 0) return null;
 
   const image = images[activeIndex];
-  const { data } = supabase.storage
-    .from("post-images")
-    .getPublicUrl(image.path);
+  const imageUrl = getPostImageUrl(image.path);
 
   function showPrevious() {
     setActiveIndex((index) => (index - 1 + images.length) % images.length);
@@ -21,7 +22,7 @@ function PostImageCarousel({ images }) {
 
   return (
     <div className="post-carousel" role="group" aria-label="Post images">
-      <img src={data.publicUrl} alt={image.caption || ""} loading="lazy" />
+      <img src={imageUrl} alt={image.caption || ""} loading="lazy" />
       {images.length > 1 && (
         <div className="carousel-controls">
           <button type="button" onClick={showPrevious} aria-label="Previous image">
@@ -61,22 +62,11 @@ export default function PostList({
       setError("");
 
       try {
-        let query = supabase
-          .from("post")
-          .select("*, photo_item(*)", { count: "exact" })
-          .order("created_at", { ascending: false });
-
-        if (!isAdmin) query = query.eq("hidden", false);
-        if (limit !== null) {
-          const start = (page - 1) * limit;
-          query = query.range(start, start + limit - 1);
-        }
-
-        const { data, count: resultCount, error: fetchError } = await query;
-        if (fetchError) throw fetchError;
+        const { posts: fetchedPosts, totalCount: fetchedCount } =
+          await fetchPosts({ isAdmin, limit, page });
         if (!cancelled) {
-          setPosts(data ?? []);
-          setTotalCount(resultCount ?? 0);
+          setPosts(fetchedPosts);
+          setTotalCount(fetchedCount);
         }
       } catch (fetchError) {
         if (!cancelled) setError(fetchError.message || "Unable to load posts.");

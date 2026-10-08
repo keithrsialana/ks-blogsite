@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { Routes, Route, Link } from "react-router-dom";
 import Home from "./pages/Home";
 import Blog from "./pages/Blog";
-import { supabase } from "./supabase";
+import {
+  getCurrentSession,
+  signInWithPassword,
+  signOut as signOutFromSupabase,
+  subscribeToAuthChanges,
+} from "./controllers/supabaseController";
 import "./App.css";
 
 const adminEmail = import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase();
@@ -30,13 +35,12 @@ export default function App() {
 
     async function loadSession() {
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const session = await getCurrentSession();
         if (!active) return;
-        if (error) setAuthError(error.message);
         setIsAdmin(
           Boolean(
             adminEmail &&
-              data.session?.user.email?.toLowerCase() === adminEmail
+              session?.user.email?.toLowerCase() === adminEmail
           )
         );
       } catch (error) {
@@ -48,9 +52,7 @@ export default function App() {
 
     loadSession();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    const unsubscribe = subscribeToAuthChanges((session) => {
       setIsAdmin(
         Boolean(adminEmail && session?.user.email?.toLowerCase() === adminEmail)
       );
@@ -58,7 +60,7 @@ export default function App() {
 
     return () => {
       active = false;
-      subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
@@ -77,15 +79,12 @@ export default function App() {
     }
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      await signInWithPassword({
         email: email.trim(),
         password,
       });
-      if (error) setAuthError(error.message);
-      else {
-        setPassword("");
-        setSignInOpen(false);
-      }
+      setPassword("");
+      setSignInOpen(false);
     } catch (error) {
       setAuthError(error.message || "Unable to sign in.");
     }
@@ -94,8 +93,7 @@ export default function App() {
   async function signOut() {
     setAuthError("");
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await signOutFromSupabase();
       setSignInOpen(false);
       setPassword("");
     } catch (error) {
