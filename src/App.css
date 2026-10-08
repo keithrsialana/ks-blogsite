@@ -330,6 +330,11 @@ html.home-scroll-page {
     transform 400ms ease;
 }
 
+.home-section:first-child {
+  scroll-snap-align: none;
+  scroll-snap-stop: normal;
+}
+
 .home-section[data-active="true"] {
   opacity: 1;
   transform: translateY(0) scale(1);
