@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { Routes, Route, Link } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Blog from "./pages/Blog";
+import SiteFooter from "./components/SiteFooter";
+import SiteNavigation from "./components/SiteNavigation";
 import {
   getCurrentSession,
   signInWithPassword,
@@ -102,76 +104,29 @@ export default function App() {
   }
 
   return (
-    <>
-      <nav className="site-nav">
-        <div className="nav-links">
-          <Link to="/">Home</Link>
-          <Link to="/blog">Blog</Link>
-        </div>
-        <div className="nav-actions">
-          <button
-            type="button"
-            className="theme-toggle"
-            onClick={() =>
-              setTheme((currentTheme) =>
-                currentTheme === "light" ? "dark" : "light"
-              )
-            }
-            aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-            title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-          >
-            {theme === "light" ? "☀️" : "🌑"}
-          </button>
-          {authLoading ? (
-            <span>Checking admin access...</span>
-          ) : isAdmin ? (
-            <button type="button" className="sign-out-button" onClick={signOut}>
-              Sign out
-            </button>
-          ) : (
-            <button
-              type="button"
-              className={`sign-in-toggle${signInOpen ? " cancel-sign-in" : ""}`}
-              onClick={() => {
-                setSignInOpen((open) => !open);
-                setAuthError("");
-              }}
-              aria-expanded={signInOpen}
-            >
-              {signInOpen ? "Cancel sign in" : "Admin sign in"}
-            </button>
-          )}
-        </div>
-      </nav>
-      {signInOpen && !isAdmin && (
-        <form
-          onSubmit={signIn}
-          className="sign-in-form"
-        >
-          <label className="form-field">
-            Email
-            <input
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
-          <label className="form-field">
-            Password
-            <input
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
-          <button type="submit">Sign in</button>
-          {authError && <p role="alert" className="form-error">{authError}</p>}
-        </form>
-      )}
+    <div className="app-layout">
+      <SiteNavigation
+        theme={theme}
+        onThemeToggle={() =>
+          setTheme((currentTheme) =>
+            currentTheme === "light" ? "dark" : "light"
+          )
+        }
+        authLoading={authLoading}
+        isAdmin={isAdmin}
+        onSignOut={signOut}
+        signInOpen={signInOpen}
+        onSignInToggle={() => {
+          setSignInOpen((open) => !open);
+          setAuthError("");
+        }}
+        email={email}
+        onEmailChange={setEmail}
+        password={password}
+        onPasswordChange={setPassword}
+        onSignIn={signIn}
+        authError={authError}
+      />
       <main className="page-shell">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -183,6 +138,7 @@ export default function App() {
           />
         </Routes>
       </main>
-    </>
+      <SiteFooter />
+    </div>
   );
 }
