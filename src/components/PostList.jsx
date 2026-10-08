@@ -5,6 +5,13 @@ import {
 } from "../controllers/supabaseController";
 
 const URL_PATTERN = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+const POST_DATE_FORMAT = {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+};
 
 function renderLinkedContent(content) {
   return content.split(URL_PATTERN).map((part, index) => {
@@ -128,12 +135,14 @@ export default function PostList({
             <h2>{p.title}</h2>
             <div className="post-dates">
               <small>
-                Created at: {new Date(p.created_at).toLocaleDateString()}
+                Created at:{" "}
+                {new Date(p.created_at).toLocaleString(undefined, POST_DATE_FORMAT)}
               </small>
               {p.updated_at &&
                 new Date(p.updated_at) > new Date(p.created_at) && (
                   <small>
-                    Updated At: {new Date(p.updated_at).toLocaleDateString()}
+                    Updated At:{" "}
+                    {new Date(p.updated_at).toLocaleString(undefined, POST_DATE_FORMAT)}
                   </small>
                 )}
             </div>

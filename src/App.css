@@ -561,6 +561,7 @@ html.home-scroll-page {
 .post-dates {
   display: flex;
   flex-direction: column;
+  color: var(--post-date-color);
 }
 
 .post-carousel {
