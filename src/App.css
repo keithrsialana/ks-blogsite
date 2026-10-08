@@ -417,6 +417,20 @@ html.home-scroll-page {
   margin-top: 0.25rem;
 }
 
+.image-upload-field input::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.4rem 0.75rem;
+  color: var(--text-color);
+  background: var(--surface-muted-hover);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.image-upload-field input::file-selector-button:hover {
+  background: var(--border-strong);
+}
+
 .selected-image-count {
   display: block;
   margin-top: 0.25rem;

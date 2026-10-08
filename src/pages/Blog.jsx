@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PostList from "../components/PostList";
+import PostEditor from "../components/PostEditor";
 import { supabase } from "../supabase";
 
 const imageBucket = "post-images";
@@ -213,85 +214,23 @@ export default function Blog({ isAdmin }) {
       )}
 
       {isAdmin && editorOpen && (
-        <form onSubmit={savePost} className="post-editor">
-          <h2>{editingId ? "Edit post" : "Create post"}</h2>
-          <label className="form-field">
-            Title
-            <input
-              type="text"
-              value={draft.title}
-              onChange={(event) =>
-                setDraft({ ...draft, title: event.target.value })
-              }
-              required
-            />
-          </label>
-          <label className="form-field">
-            Content
-            <textarea
-              value={draft.content}
-              onChange={(event) =>
-                setDraft({ ...draft, content: event.target.value })
-              }
-              required
-              rows={8}
-            />
-          </label>
-          <label className="form-field image-upload-field">
-            Images
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(event) => {
-                const files = Array.from(event.target.files ?? []);
-                if (files.some((file) => !file.type.startsWith("image/"))) {
-                  setAuthError("Select image files only.");
-                  event.target.value = "";
-                  return;
-                }
-                setAuthError("");
-                setSelectedImages(files);
-              }}
-            />
-            {selectedImages.length > 0 && (
-              <span className="selected-image-count">
-                {selectedImages.length} image
-                {selectedImages.length === 1 ? "" : "s"} selected
-              </span>
-            )}
-          </label>
-          <label className="checkbox-field">
-            <input
-              type="checkbox"
-              checked={draft.hidden}
-              onChange={(event) =>
-                setDraft({ ...draft, hidden: event.target.checked })
-              }
-            />{" "}
-            Hide from visitors
-          </label>
-          <div className="form-actions">
-            <button
-              type="submit"
-              className="save-post-button"
-              disabled={saving}
-            >
-              {saving ? "Saving..." : "Save post"}
-            </button>
-            <button
-              type="button"
-              className="cancel-post-button"
-              onClick={() => {
-                setEditorOpen(false);
-                setEditingId(null);
-                setSelectedImages([]);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+        <PostEditor
+          draft={draft}
+          onDraftChange={setDraft}
+          selectedImages={selectedImages}
+          onImagesChange={(files, error) => {
+            setSelectedImages(files);
+            setAuthError(error);
+          }}
+          saving={saving}
+          isEditing={Boolean(editingId)}
+          onSubmit={savePost}
+          onCancel={() => {
+            setEditorOpen(false);
+            setEditingId(null);
+            setSelectedImages([]);
+          }}
+        />
       )}
 
       {authError && <p role="alert">{authError}</p>}
