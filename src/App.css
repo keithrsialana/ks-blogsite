@@ -553,6 +553,11 @@ html.home-scroll-page {
   overflow-wrap: anywhere;
 }
 
+.post-content a {
+  color: var(--link-color);
+  text-decoration: underline;
+}
+
 .post-dates {
   display: flex;
   flex-direction: column;

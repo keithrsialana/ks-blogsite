@@ -1,8 +1,33 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   fetchPosts,
   getPostImageUrl,
 } from "../controllers/supabaseController";
+
+const URL_PATTERN = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+
+function renderLinkedContent(content) {
+  return content.split(URL_PATTERN).map((part, index) => {
+    if (index % 2 === 0) return part;
+
+    const trailingPunctuation = part.match(/[.,!?;:]+$/)?.[0] ?? "";
+    const url = part.slice(0, part.length - trailingPunctuation.length);
+    if (!url) return part;
+
+    return (
+      <Fragment key={index}>
+        <a
+          href={/^www\./i.test(url) ? `https://${url}` : url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {url}
+        </a>
+        {trailingPunctuation}
+      </Fragment>
+    );
+  });
+}
 
 function PostImageCarousel({ images }) {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -113,7 +138,7 @@ export default function PostList({
                 )}
             </div>
             {isAdmin && p.hidden && <p>Hidden from visitors</p>}
-            <p className="post-content">{p.content}</p>
+            <p className="post-content">{renderLinkedContent(p.content)}</p>
             <PostImageCarousel images={p.photo_item ?? []} />
             {isAdmin && (
               <div className="post-actions">
