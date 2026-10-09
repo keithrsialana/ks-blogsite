@@ -734,7 +734,7 @@ html.home-scroll-page {
   padding-bottom: 1.5rem;
   padding-right: 10px;
   padding-left: 10px;
-  background: var(--surface);
+  background: linear-gradient(to bottom, var(--page-bg), var(--surface) 3rem);
   border: 2px solid var(--border);
   border-top: 0;
   border-radius: 0 0 0.5rem 0.5rem;
@@ -743,6 +743,10 @@ html.home-scroll-page {
 .post-content {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.post > h2 {
+  text-align: center;
 }
 
 .post-update-marker {
