@@ -222,8 +222,8 @@ export default function PostList({
                 )}
             </div>
             {isAdmin && p.hidden && <p>Hidden from visitors</p>}
-            <p className="post-content">{renderPostContent(p.content)}</p>
             <PostImageCarousel images={p.photo_item ?? []} />
+            <p className="post-content">{renderPostContent(p.content)}</p>
             {isAdmin && (
               <div className="post-actions">
                 <button
