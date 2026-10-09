@@ -277,6 +277,10 @@ export default function Blog({ isAdmin }) {
       <PostList
         limit={count}
         tag={selectedTag}
+        onTagSelect={(tag) => {
+          setSelectedTag(tag);
+          setPage(1);
+        }}
         page={page}
         onPageChange={setPage}
         isAdmin={isAdmin}

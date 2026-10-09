@@ -536,6 +536,18 @@ html.home-scroll-page {
   font-weight: 400;
 }
 
+.tag-chip button {
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.post-tags .tag-chip:hover {
+  background: var(--surface-muted-hover);
+}
+
 .post-tags {
   margin: 0.5rem 0 1rem;
 }

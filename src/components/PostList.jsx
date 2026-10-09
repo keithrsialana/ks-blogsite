@@ -120,6 +120,7 @@ function PostImageCarousel({ images }) {
 //     refreshKey - Triggers a post reload when changed.
 //     onEdit - Opens a post in the editor.
 //     onDelete - Deletes a post.
+//     onTagSelect - Sets the post filter to the selected tag.
 // Description: Fetches and renders paginated posts, tags, and admin actions.
 // Author: Keith Sialana
 export default function PostList({
@@ -131,6 +132,7 @@ export default function PostList({
   refreshKey = 0,
   onEdit,
   onDelete,
+  onTagSelect,
 }) {
   const [posts, setPosts] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -195,7 +197,13 @@ export default function PostList({
                   .filter((tag) => typeof tag === "string")
                   .map((tag) => (
                     <li className="tag-chip" key={tag}>
-                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => onTagSelect?.(tag)}
+                        aria-label={`Filter posts by ${tag}`}
+                      >
+                        {tag}
+                      </button>
                     </li>
                   ))}
               </ul>
