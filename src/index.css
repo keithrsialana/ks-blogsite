@@ -2,7 +2,7 @@
 
 :root {
   color-scheme: light;
-  --page-bg: #f3f4f6;
+  --page-bg: #eaf4ff;
   --text-color: #1f2937;
   --surface: #fff;
   --surface-muted: #f3f4f6;
@@ -37,7 +37,7 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --page-bg: #111827;
+  --page-bg: #0b1727;
   --text-color: #e5e7eb;
   --surface: #1f2937;
   --surface-muted: #374151;
@@ -106,6 +106,10 @@ img {
 }
 
 h1 {
+  margin-bottom: 10px;
+  padding: 0.75rem 1rem;
+  color: #fff;
+  background-color: #083066;
   font-size: clamp(1.65rem, 5vw, 2.25rem);
   line-height: 1.2;
   text-align: center;

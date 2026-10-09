@@ -8,6 +8,11 @@ import {
   updatePost,
 } from "../controllers/supabaseController";
 
+// Name: Blog
+// Parameters:
+//     isAdmin - Whether the current user can manage posts.
+// Description: Renders blog controls, manages post editing, and filters the post list.
+// Author: Keith Sialana
 export default function Blog({ isAdmin }) {
   const [count, setCount] = useState(10);
   const [page, setPage] = useState(1);
@@ -31,6 +36,11 @@ export default function Blog({ isAdmin }) {
   useEffect(() => {
     let cancelled = false;
 
+    // Name: loadTags
+    // Parameters:
+    //     None - This function takes no parameters.
+    // Description: Fetches available tags and updates the loading or error state.
+    // Author: Keith Sialana
     async function loadTags() {
       try {
         const fetchedTags = await fetchTags();
@@ -56,6 +66,11 @@ export default function Blog({ isAdmin }) {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
+    // Name: handleKeyDown
+    // Parameters:
+    //     event - The keyboard event to inspect.
+    // Description: Closes the post editor when Escape is pressed and no save is in progress.
+    // Author: Keith Sialana
     function handleKeyDown(event) {
       if (event.key === "Escape" && !saving) {
         setEditorOpen(false);
@@ -71,6 +86,11 @@ export default function Blog({ isAdmin }) {
     };
   }, [editorOpen, saving]);
 
+  // Name: startNewPost
+  // Parameters:
+  //     None - This function takes no parameters.
+  // Description: Resets the editor draft and opens a new post form.
+  // Author: Keith Sialana
   function startNewPost() {
     setEditingId(null);
     setDraft({ title: "", content: "", hidden: false, tags: [] });
@@ -79,6 +99,11 @@ export default function Blog({ isAdmin }) {
     setEditorOpen(true);
   }
 
+  // Name: startEditing
+  // Parameters:
+  //     post - The post to load into the editor.
+  // Description: Loads an existing post into the editor and opens the edit form.
+  // Author: Keith Sialana
   function startEditing(post) {
     setEditingId(post.id);
     setDraft({
@@ -92,6 +117,11 @@ export default function Blog({ isAdmin }) {
     setEditorOpen(true);
   }
 
+  // Name: savePost
+  // Parameters:
+  //     event - The post editor form submission event.
+  // Description: Creates or updates a post and refreshes the post list on success.
+  // Author: Keith Sialana
   async function savePost(event) {
     event.preventDefault();
     setAuthError("");
@@ -122,6 +152,11 @@ export default function Blog({ isAdmin }) {
     }
   }
 
+  // Name: deletePost
+  // Parameters:
+  //     post - The post to confirm and delete.
+  // Description: Confirms and deletes a post, then refreshes the post list.
+  // Author: Keith Sialana
   async function deletePost(post) {
     if (!window.confirm(`Delete "${post.title}"? This cannot be undone.`)) {
       return;

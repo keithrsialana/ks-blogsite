@@ -733,6 +733,10 @@ html.home-scroll-page {
   overflow-wrap: anywhere;
 }
 
+.post-update-marker {
+  color: var(--error-text);
+}
+
 .post-content a {
   color: var(--link-color);
   text-decoration: underline;

@@ -2,10 +2,20 @@ import { supabase } from "../supabase";
 
 const imageBucket = "post-images";
 
+// Name: throwIfError
+// Parameters:
+//     error - The Supabase error to check.
+// Description: Throws a Supabase error when a request fails.
+// Author: Keith Sialana
 function throwIfError(error) {
   if (error) throw error;
 }
 
+// Name: withTagNameArray
+// Parameters:
+//     post - The post whose tag-name array should be validated.
+// Description: Validates and copies a post's tag names into an array.
+// Author: Keith Sialana
 function withTagNameArray(post) {
   if (
     !Array.isArray(post.tags) ||
@@ -17,6 +27,12 @@ function withTagNameArray(post) {
   return { ...post, tags: [...post.tags] };
 }
 
+// Name: createImagePath
+// Parameters:
+//     postId - The owning post's ID.
+//     file - The image file to name.
+// Description: Creates a unique hashed storage path for a post image.
+// Author: Keith Sialana
 async function createImagePath(postId, file) {
   const randomBytes = window.crypto.getRandomValues(new Uint8Array(32));
   const hashBuffer = await window.crypto.subtle.digest("SHA-256", randomBytes);
@@ -29,12 +45,22 @@ async function createImagePath(postId, file) {
   return `${postId}/${hash}.${extension}`;
 }
 
+// Name: getCurrentSession
+// Parameters:
+//     None - This function takes no parameters.
+// Description: Retrieves the current Supabase authentication session.
+// Author: Keith Sialana
 export async function getCurrentSession() {
   const { data, error } = await supabase.auth.getSession();
   throwIfError(error);
   return data.session;
 }
 
+// Name: subscribeToAuthChanges
+// Parameters:
+//     onSessionChange - Callback invoked with each updated session.
+// Description: Subscribes to Supabase auth changes and returns an unsubscribe function.
+// Author: Keith Sialana
 export function subscribeToAuthChanges(onSessionChange) {
   const {
     data: { subscription },
@@ -45,16 +71,31 @@ export function subscribeToAuthChanges(onSessionChange) {
   return () => subscription.unsubscribe();
 }
 
+// Name: signInWithPassword
+// Parameters:
+//     credentials - Supabase email and password credentials.
+// Description: Signs in to Supabase with email and password credentials.
+// Author: Keith Sialana
 export async function signInWithPassword(credentials) {
   const { error } = await supabase.auth.signInWithPassword(credentials);
   throwIfError(error);
 }
 
+// Name: signOut
+// Parameters:
+//     None - This function takes no parameters.
+// Description: Signs out the current Supabase user.
+// Author: Keith Sialana
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
   throwIfError(error);
 }
 
+// Name: fetchTags
+// Parameters:
+//     None - This function takes no parameters.
+// Description: Retrieves available tags from Supabase in tag-name order.
+// Author: Keith Sialana
 export async function fetchTags() {
   const { data, error } = await supabase
     .from("tags")
@@ -65,6 +106,11 @@ export async function fetchTags() {
   return data ?? [];
 }
 
+// Name: createPostsQuery
+// Parameters:
+//     isAdmin - Whether hidden posts should be included.
+// Description: Creates an ordered post query, hiding hidden posts from visitors.
+// Author: Keith Sialana
 function createPostsQuery(isAdmin) {
   let query = supabase
     .from("post")
@@ -75,6 +121,14 @@ function createPostsQuery(isAdmin) {
   return query;
 }
 
+// Name: fetchPosts
+// Parameters:
+//     isAdmin - Whether hidden posts are visible.
+//     limit - Posts per page, or null for all.
+//     page - Page number to retrieve.
+//     tag - Optional tag name to match.
+// Description: Retrieves posts with optional tag matching and pagination.
+// Author: Keith Sialana
 export async function fetchPosts({ isAdmin, limit, page, tag }) {
   if (tag) {
     const batchSize = 500;
@@ -119,11 +173,22 @@ export async function fetchPosts({ isAdmin, limit, page, tag }) {
   return { posts: data ?? [], totalCount: count ?? 0 };
 }
 
+// Name: getPostImageUrl
+// Parameters:
+//     path - Storage path of the image.
+// Description: Returns the public URL for a stored post image.
+// Author: Keith Sialana
 export function getPostImageUrl(path) {
   const { data } = supabase.storage.from(imageBucket).getPublicUrl(path);
   return data.publicUrl;
 }
 
+// Name: removePostImages
+// Parameters:
+//     postId - ID of the owning post.
+//     paths - Image paths to delete.
+// Description: Deletes image records and their stored files for a post.
+// Author: Keith Sialana
 async function removePostImages(postId, paths) {
   if (paths.length === 0) return;
 
@@ -140,6 +205,12 @@ async function removePostImages(postId, paths) {
   throwIfError(storageError);
 }
 
+// Name: uploadPostImages
+// Parameters:
+//     postId - ID of the owning post.
+//     files - Image files to upload.
+// Description: Uploads post images and stores their database records.
+// Author: Keith Sialana
 async function uploadPostImages(postId, files) {
   const uploadedPaths = [];
   const storage = supabase.storage.from(imageBucket);
@@ -187,6 +258,12 @@ async function uploadPostImages(postId, files) {
   }
 }
 
+// Name: createPost
+// Parameters:
+//     post - Post data to insert.
+//     imageFiles - Images to upload for the post.
+// Description: Inserts a post and uploads its images, rolling back on upload failure.
+// Author: Keith Sialana
 export async function createPost(post, imageFiles) {
   const { data, error } = await supabase
     .from("post")
@@ -214,6 +291,13 @@ export async function createPost(post, imageFiles) {
   return data.id;
 }
 
+// Name: updatePost
+// Parameters:
+//     postId - ID of the post to update.
+//     post - Updated post data.
+//     imageFiles - New images to upload.
+// Description: Updates a post and uploads its images with cleanup on failure.
+// Author: Keith Sialana
 export async function updatePost(postId, post, imageFiles) {
   const postWithTags = withTagNameArray(post);
   const uploadedPaths = await uploadPostImages(postId, imageFiles);
@@ -240,6 +324,11 @@ export async function updatePost(postId, post, imageFiles) {
   }
 }
 
+// Name: deletePost
+// Parameters:
+//     postId - ID of the post to delete.
+// Description: Deletes a post from Supabase.
+// Author: Keith Sialana
 export async function deletePost(postId) {
   const { error } = await supabase.from("post").delete().eq("id", postId);
   throwIfError(error);

@@ -1,3 +1,18 @@
+// Name: PostEditor
+// Parameters:
+//     draft - Current post form values.
+//     onDraftChange - Updates form values.
+//     tags - Available tags.
+//     tagsLoading - Whether tags are loading.
+//     tagsError - Tag loading error message.
+//     selectedImages - Images chosen for upload.
+//     onImagesChange - Updates chosen images and validation errors.
+//     saving - Whether a save is in progress.
+//     isEditing - Whether editing an existing post.
+//     onSubmit - Handles form submission.
+//     onCancel - Closes the editor.
+// Description: Renders the post creation and editing form, including tag and image selection.
+// Author: Keith Sialana
 export default function PostEditor({
   draft,
   onDraftChange,

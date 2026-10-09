@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
+// Name: Home
+// Parameters:
+//     None - This component takes no parameters.
+// Description: Renders the home page sections and tracks the active section in view.
+// Author: Keith Sialana
 export default function Home() {
   const homeRef = useRef(null);
   const [activeSection, setActiveSection] = useState(0);

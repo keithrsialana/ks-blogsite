@@ -5,6 +5,7 @@ import {
 } from "../controllers/supabaseController";
 
 const URL_PATTERN = /(https?:\/\/[^\s<>"']+|www\.[^\s<>"']+)/gi;
+const UPDATE_PATTERN = /(UPDATE:)/g;
 const POST_DATE_FORMAT = {
   year: "numeric",
   month: "long",
@@ -13,7 +14,12 @@ const POST_DATE_FORMAT = {
   minute: "2-digit",
 };
 
-function renderLinkedContent(content) {
+// Name: renderLinks
+// Parameters:
+//     content - Post content whose URLs should become links.
+// Description: Converts URLs in post content into safe external links.
+// Author: Keith Sialana
+function renderLinks(content) {
   return content.split(URL_PATTERN).map((part, index) => {
     if (index % 2 === 0) return part;
 
@@ -36,6 +42,28 @@ function renderLinkedContent(content) {
   });
 }
 
+// Name: renderPostContent
+// Parameters:
+//     content - Post content to render with links and highlighted update markers.
+// Description: Highlights UPDATE markers and renders links in post content.
+// Author: Keith Sialana
+function renderPostContent(content) {
+  return content.split(UPDATE_PATTERN).map((part, index) =>
+    part === "UPDATE:" ? (
+      <span className="post-update-marker" key={index}>
+        {part}
+      </span>
+    ) : (
+      <Fragment key={index}>{renderLinks(part)}</Fragment>
+    )
+  );
+}
+
+// Name: PostImageCarousel
+// Parameters:
+//     images - Images to display in the carousel.
+// Description: Displays post images with previous and next carousel controls.
+// Author: Keith Sialana
 function PostImageCarousel({ images }) {
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -44,10 +72,20 @@ function PostImageCarousel({ images }) {
   const image = images[activeIndex];
   const imageUrl = getPostImageUrl(image.path);
 
+  // Name: showPrevious
+  // Parameters:
+  //     None - This function takes no parameters.
+  // Description: Selects the previous image in the carousel, wrapping at the beginning.
+  // Author: Keith Sialana
   function showPrevious() {
     setActiveIndex((index) => (index - 1 + images.length) % images.length);
   }
 
+  // Name: showNext
+  // Parameters:
+  //     None - This function takes no parameters.
+  // Description: Selects the next image in the carousel, wrapping at the end.
+  // Author: Keith Sialana
   function showNext() {
     setActiveIndex((index) => (index + 1) % images.length);
   }
@@ -72,6 +110,18 @@ function PostImageCarousel({ images }) {
   );
 }
 
+// Name: PostList
+// Parameters:
+//     limit - Maximum posts per page, or null for all.
+//     tag - Tag name to filter by.
+//     page - Current page number.
+//     onPageChange - Updates the current page.
+//     isAdmin - Whether to include hidden posts and admin actions.
+//     refreshKey - Triggers a post reload when changed.
+//     onEdit - Opens a post in the editor.
+//     onDelete - Deletes a post.
+// Description: Fetches and renders paginated posts, tags, and admin actions.
+// Author: Keith Sialana
 export default function PostList({
   limit = 10,
   tag = "",
@@ -90,6 +140,11 @@ export default function PostList({
   useEffect(() => {
     let cancelled = false;
 
+    // Name: loadPosts
+    // Parameters:
+    //     None - This function takes no parameters.
+    // Description: Fetches the current post page and records loading or error state.
+    // Author: Keith Sialana
     async function loadPosts() {
       setLoading(true);
       setError("");
@@ -159,7 +214,7 @@ export default function PostList({
                 )}
             </div>
             {isAdmin && p.hidden && <p>Hidden from visitors</p>}
-            <p className="post-content">{renderLinkedContent(p.content)}</p>
+            <p className="post-content">{renderPostContent(p.content)}</p>
             <PostImageCarousel images={p.photo_item ?? []} />
             {isAdmin && (
               <div className="post-actions">

@@ -1,6 +1,23 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 
+// Name: SiteNavigation
+// Parameters:
+//     theme - Current color theme.
+//     onThemeToggle - Toggles the theme.
+//     authLoading - Whether authentication is loading.
+//     isAdmin - Whether the current user is an admin.
+//     onSignOut - Signs out the admin.
+//     signInOpen - Whether the sign-in form is open.
+//     onSignInToggle - Toggles the sign-in form.
+//     email - Sign-in email value.
+//     onEmailChange - Updates the email value.
+//     password - Sign-in password value.
+//     onPasswordChange - Updates the password value.
+//     onSignIn - Submits sign-in credentials.
+//     authError - Sign-in error message.
+// Description: Renders site navigation, theme controls, and admin sign-in controls.
+// Author: Keith Sialana
 export default function SiteNavigation({
   theme,
   onThemeToggle,
@@ -18,6 +35,11 @@ export default function SiteNavigation({
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
+  // Name: closeMenu
+  // Parameters:
+  //     None - This function takes no parameters.
+  // Description: Closes the responsive navigation menu.
+  // Author: Keith Sialana
   function closeMenu() {
     setMenuOpen(false);
   }

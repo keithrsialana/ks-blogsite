@@ -15,6 +15,11 @@ import "./App.css";
 const adminEmail = import.meta.env.VITE_ADMIN_EMAIL?.trim().toLowerCase();
 const themeStorageKey = "ks-blogsite-theme";
 
+// Name: App
+// Parameters:
+//     None - This component takes no parameters.
+// Description: Renders the application shell and manages theme and admin authentication state.
+// Author: Keith Sialana
 export default function App() {
   const [theme, setTheme] = useState(() => {
     const savedTheme = window.localStorage.getItem(themeStorageKey);
@@ -35,6 +40,11 @@ export default function App() {
   useEffect(() => {
     let active = true;
 
+    // Name: loadSession
+    // Parameters:
+    //     None - This function takes no parameters.
+    // Description: Loads the current Supabase session and determines admin access.
+    // Author: Keith Sialana
     async function loadSession() {
       try {
         const session = await getCurrentSession();
@@ -66,6 +76,11 @@ export default function App() {
     };
   }, []);
 
+  // Name: signIn
+  // Parameters:
+  //     event - The sign-in form submission event.
+  // Description: Validates the configured admin email and signs in with Supabase credentials.
+  // Author: Keith Sialana
   async function signIn(event) {
     event.preventDefault();
     setAuthError("");
@@ -92,6 +107,11 @@ export default function App() {
     }
   }
 
+  // Name: signOut
+  // Parameters:
+  //     None - This function takes no parameters.
+  // Description: Signs out the current Supabase user and clears sign-in state.
+  // Author: Keith Sialana
   async function signOut() {
     setAuthError("");
     try {
