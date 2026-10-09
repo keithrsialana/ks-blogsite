@@ -6,6 +6,17 @@ function throwIfError(error) {
   if (error) throw error;
 }
 
+function withTagNameArray(post) {
+  if (
+    !Array.isArray(post.tags) ||
+    post.tags.some((tagName) => typeof tagName !== "string")
+  ) {
+    throw new Error("Post tags must be an array of tag names.");
+  }
+
+  return { ...post, tags: [...post.tags] };
+}
+
 async function createImagePath(postId, file) {
   const randomBytes = window.crypto.getRandomValues(new Uint8Array(32));
   const hashBuffer = await window.crypto.subtle.digest("SHA-256", randomBytes);
@@ -44,18 +55,64 @@ export async function signOut() {
   throwIfError(error);
 }
 
-export async function fetchPosts({ isAdmin, limit, page }) {
+export async function fetchTags() {
+  const { data, error } = await supabase
+    .from("tags")
+    .select("*")
+    .order("tag_name", { ascending: true });
+  throwIfError(error);
+
+  return data ?? [];
+}
+
+function createPostsQuery(isAdmin) {
   let query = supabase
     .from("post")
     .select("*, photo_item(*)", { count: "exact" })
     .order("created_at", { ascending: false });
 
   if (!isAdmin) query = query.eq("hidden", false);
+  return query;
+}
+
+export async function fetchPosts({ isAdmin, limit, page, tag }) {
+  if (tag) {
+    const batchSize = 500;
+    const allPosts = [];
+    let totalCount = 0;
+
+    for (let start = 0; start === 0 || start < totalCount; ) {
+      const { data, count, error } = await createPostsQuery(isAdmin).range(
+        start,
+        start + batchSize - 1
+      );
+      throwIfError(error);
+
+      const batch = data ?? [];
+      if (start === 0) totalCount = count ?? 0;
+      if (batch.length === 0) break;
+
+      allPosts.push(...batch);
+      start += batch.length;
+    }
+
+    const matchingPosts = allPosts.filter(
+      (post) => Array.isArray(post.tags) && post.tags.includes(tag)
+    );
+    const start = limit === null ? 0 : (page - 1) * limit;
+    const end = limit === null ? undefined : start + limit;
+
+    return {
+      posts: matchingPosts.slice(start, end),
+      totalCount: matchingPosts.length,
+    };
+  }
+
+  let query = createPostsQuery(isAdmin);
   if (limit !== null) {
     const start = (page - 1) * limit;
     query = query.range(start, start + limit - 1);
   }
-
   const { data, count, error } = await query;
   throwIfError(error);
 
@@ -133,7 +190,7 @@ async function uploadPostImages(postId, files) {
 export async function createPost(post, imageFiles) {
   const { data, error } = await supabase
     .from("post")
-    .insert(post)
+    .insert(withTagNameArray(post))
     .select("id")
     .single();
   throwIfError(error);
@@ -158,10 +215,14 @@ export async function createPost(post, imageFiles) {
 }
 
 export async function updatePost(postId, post, imageFiles) {
+  const postWithTags = withTagNameArray(post);
   const uploadedPaths = await uploadPostImages(postId, imageFiles);
   const { error } = await supabase
     .from("post")
-    .update({ ...post, updated_at: new Date().toISOString() })
+    .update({
+      ...postWithTags,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", postId);
 
   if (error) {

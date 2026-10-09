@@ -74,6 +74,7 @@ function PostImageCarousel({ images }) {
 
 export default function PostList({
   limit = 10,
+  tag = "",
   page = 1,
   onPageChange,
   isAdmin = false,
@@ -95,7 +96,7 @@ export default function PostList({
 
       try {
         const { posts: fetchedPosts, totalCount: fetchedCount } =
-          await fetchPosts({ isAdmin, limit, page });
+          await fetchPosts({ isAdmin, limit, page, tag });
         if (!cancelled) {
           setPosts(fetchedPosts);
           setTotalCount(fetchedCount);
@@ -111,7 +112,7 @@ export default function PostList({
     return () => {
       cancelled = true;
     };
-  }, [isAdmin, limit, page, refreshKey]);
+  }, [isAdmin, limit, page, refreshKey, tag]);
 
   const pageCount =
     limit === null ? 1 : Math.max(1, Math.ceil(totalCount / limit));
@@ -133,6 +134,17 @@ export default function PostList({
         posts.map((p) => (
           <article key={p.id} className="post">
             <h2>{p.title}</h2>
+            {Array.isArray(p.tags) && p.tags.some((tag) => typeof tag === "string") && (
+              <ul className="selected-tags post-tags" aria-label="Post tags">
+                {p.tags
+                  .filter((tag) => typeof tag === "string")
+                  .map((tag) => (
+                    <li className="tag-chip" key={tag}>
+                      {tag}
+                    </li>
+                  ))}
+              </ul>
+            )}
             <div className="post-dates">
               <small>
                 Created at:{" "}

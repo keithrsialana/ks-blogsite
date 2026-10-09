@@ -1,6 +1,9 @@
 export default function PostEditor({
   draft,
   onDraftChange,
+  tags,
+  tagsLoading,
+  tagsError,
   selectedImages,
   onImagesChange,
   saving,
@@ -9,8 +12,59 @@ export default function PostEditor({
   onCancel,
 }) {
   return (
-    <form onSubmit={onSubmit} className="post-editor">
-      <h2>{isEditing ? "Edit post" : "Create post"}</h2>
+    <form
+      onSubmit={onSubmit}
+      className="post-editor"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="post-editor-title"
+    >
+      <h2 id="post-editor-title">{isEditing ? "Edit post" : "Create post"}</h2>
+      {draft.tags.length > 0 && (
+        <ul className="selected-tags" aria-label="Selected tags">
+          {draft.tags.map((tag) => (
+            <li className="tag-chip" key={tag}>
+              {tag}
+            </li>
+          ))}
+        </ul>
+      )}
+      <fieldset className="tag-picker form-field">
+        <legend>Tag</legend>
+        <details>
+          <summary>
+            {tagsLoading
+              ? "Loading tags..."
+              : draft.tags.length > 0
+                ? `${draft.tags.length} selected`
+                : "Select tags"}
+          </summary>
+          <div className="tag-picker-options">
+            {tagsError ? (
+              <p role="alert">{tagsError}</p>
+            ) : tags.length > 0 ? (
+              tags.map(({ tag_name: tagName }) => (
+                <label key={tagName}>
+                  <input
+                    type="checkbox"
+                    checked={draft.tags.includes(tagName)}
+                    disabled={tagsLoading}
+                    onChange={(event) => {
+                      const nextTags = event.target.checked
+                        ? [...draft.tags, tagName]
+                        : draft.tags.filter((tag) => tag !== tagName);
+                      onDraftChange({ ...draft, tags: nextTags });
+                    }}
+                  />
+                  {tagName}
+                </label>
+              ))
+            ) : (
+              <p>No tags available.</p>
+            )}
+          </div>
+        </details>
+      </fieldset>
       <label className="form-field">
         Title
         <input
