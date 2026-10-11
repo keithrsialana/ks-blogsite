@@ -8,8 +8,13 @@
 //     selectedImages - Images chosen for upload.
 //     onImagesChange - Updates chosen images and validation errors.
 //     saving - Whether a save is in progress.
+//     savingDraft - Whether the local draft is being saved.
+//     draftSaved - Whether the current form is saved locally.
+//     formResetKey - Remounts uncontrolled form elements after clearing.
 //     isEditing - Whether editing an existing post.
 //     onSubmit - Handles form submission.
+//     onSaveDraft - Saves a new post draft locally.
+//     onClear - Clears the new post form and saved draft.
 //     onCancel - Closes the editor.
 // Description: Renders the post creation and editing form, including tag and image selection.
 // Author: Keith Sialana
@@ -22,8 +27,13 @@ export default function PostEditor({
   selectedImages,
   onImagesChange,
   saving,
+  savingDraft,
+  draftSaved,
+  formResetKey,
   isEditing,
   onSubmit,
+  onSaveDraft,
+  onClear,
   onCancel,
 }) {
   return (
@@ -46,7 +56,7 @@ export default function PostEditor({
       )}
       <fieldset className="tag-picker form-field">
         <legend>Tag</legend>
-        <details>
+        <details key={formResetKey}>
           <summary>
             {tagsLoading
               ? "Loading tags..."
@@ -105,6 +115,7 @@ export default function PostEditor({
       <label className="form-field image-upload-field">
         Images
         <input
+          key={formResetKey}
           type="file"
           accept="image/*"
           multiple
@@ -136,12 +147,32 @@ export default function PostEditor({
         Hide from visitors
       </label>
       <div className="form-actions">
+        {!isEditing && (
+          <>
+            <button
+              type="button"
+              className="clear-post-button"
+              onClick={onClear}
+              disabled={saving || savingDraft}
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              className="save-draft-button"
+              onClick={onSaveDraft}
+              disabled={saving || savingDraft}
+            >
+              {savingDraft ? "Saving draft..." : "Save draft"}
+            </button>
+          </>
+        )}
         <button
           type="submit"
           className="save-post-button"
-          disabled={saving}
+          disabled={saving || savingDraft}
         >
-          {saving ? "Saving..." : "Save post"}
+          {saving ? "Saving..." : "Publish post"}
         </button>
         <button
           type="button"
@@ -151,6 +182,9 @@ export default function PostEditor({
           Cancel
         </button>
       </div>
+      {draftSaved && (
+        <p role="status">Draft saved on this device.</p>
+      )}
     </form>
   );
 }

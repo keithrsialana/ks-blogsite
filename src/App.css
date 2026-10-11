@@ -664,6 +664,24 @@ html.home-scroll-page {
   background: var(--green-hover);
 }
 
+.form-actions .save-draft-button {
+  background: var(--yellow-bg);
+  border-color: var(--yellow-border);
+}
+
+.form-actions .save-draft-button:hover {
+  background: var(--yellow-hover);
+}
+
+.form-actions .clear-post-button {
+  background: var(--blue-bg);
+  border-color: var(--blue-border);
+}
+
+.form-actions .clear-post-button:hover {
+  background: var(--blue-hover);
+}
+
 .form-actions .cancel-post-button {
   background: var(--red-bg);
   border-color: var(--red-border);

@@ -8,6 +8,77 @@ import {
   updatePost,
 } from "../controllers/supabaseController";
 
+const postDraftStorageKey = "ks-blogsite-post-draft";
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error(`Unable to read image "${file.name}".`));
+      }
+    };
+    reader.onerror = () =>
+      reject(reader.error || new Error(`Unable to read image "${file.name}".`));
+    reader.readAsDataURL(file);
+  });
+}
+
+function fileFromDataUrl(image) {
+  const match = /^data:([^;,]+);base64,(.*)$/.exec(image.dataUrl);
+  if (!match) {
+    throw new Error(`The saved image "${image.name}" is invalid.`);
+  }
+
+  const binary = window.atob(match[2]);
+  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+  return new File([bytes], image.name, {
+    type: match[1],
+    lastModified: image.lastModified,
+  });
+}
+
+function loadPostDraft() {
+  const savedDraft = window.localStorage.getItem(postDraftStorageKey);
+  if (!savedDraft) return null;
+
+  const parsed = JSON.parse(savedDraft);
+  if (
+    parsed?.version !== 1 ||
+    typeof parsed.title !== "string" ||
+    typeof parsed.content !== "string" ||
+    typeof parsed.hidden !== "boolean" ||
+    !Array.isArray(parsed.tags) ||
+    !parsed.tags.every((tag) => typeof tag === "string") ||
+    !Array.isArray(parsed.images)
+  ) {
+    throw new Error("The saved post draft is invalid and could not be loaded.");
+  }
+
+  const images = parsed.images.map((image) => {
+    if (
+      typeof image?.name !== "string" ||
+      typeof image.dataUrl !== "string" ||
+      !Number.isFinite(image.lastModified)
+    ) {
+      throw new Error("The saved post draft contains an invalid image.");
+    }
+    return fileFromDataUrl(image);
+  });
+
+  return {
+    draft: {
+      title: parsed.title,
+      content: parsed.content,
+      hidden: parsed.hidden,
+      tags: parsed.tags,
+    },
+    images,
+  };
+}
+
 // Name: Blog
 // Parameters:
 //     isAdmin - Whether the current user can manage posts.
@@ -31,6 +102,9 @@ export default function Blog({ isAdmin }) {
   });
   const [selectedImages, setSelectedImages] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [formResetKey, setFormResetKey] = useState(0);
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -95,7 +169,17 @@ export default function Blog({ isAdmin }) {
     setEditingId(null);
     setDraft({ title: "", content: "", hidden: false, tags: [] });
     setSelectedImages([]);
+    setDraftSaved(false);
     setAuthError("");
+    try {
+      const savedDraft = loadPostDraft();
+      if (savedDraft) {
+        setDraft(savedDraft.draft);
+        setSelectedImages(savedDraft.images);
+      }
+    } catch (error) {
+      setAuthError(error.message || "Unable to load the saved draft.");
+    }
     setEditorOpen(true);
   }
 
@@ -113,8 +197,68 @@ export default function Blog({ isAdmin }) {
       tags: Array.isArray(post.tags) ? post.tags : [],
     });
     setSelectedImages([]);
+    setDraftSaved(false);
     setAuthError("");
     setEditorOpen(true);
+  }
+
+  // Name: saveDraft
+  // Parameters:
+  //     None - Saves the current new-post form in browser storage.
+  // Description: Stores the post fields and selected images as a JSON draft.
+  // Author: Keith Sialana
+  async function saveDraft() {
+    setAuthError("");
+    setSavingDraft(true);
+    setDraftSaved(false);
+    const draftToSave = draft;
+    const imagesToSave = selectedImages;
+
+    try {
+      const images = await Promise.all(
+        imagesToSave.map(async (image) => ({
+          name: image.name,
+          lastModified: image.lastModified,
+          dataUrl: await fileToDataUrl(image),
+        }))
+      );
+      const savedDraft = {
+        version: 1,
+        title: draftToSave.title,
+        content: draftToSave.content,
+        hidden: draftToSave.hidden,
+        tags: draftToSave.tags,
+        images,
+      };
+      window.localStorage.setItem(
+        postDraftStorageKey,
+        JSON.stringify(savedDraft)
+      );
+      if (draft === draftToSave && selectedImages === imagesToSave) {
+        setDraftSaved(true);
+      }
+    } catch (error) {
+      setAuthError(
+        error.name === "QuotaExceededError"
+          ? "Unable to save the draft because it exceeds this browser's local storage capacity. Try removing or resizing images."
+          : error.message || "Unable to save the draft in this browser."
+      );
+    } finally {
+      setSavingDraft(false);
+    }
+  }
+
+  // Name: clearNewPost
+  // Parameters:
+  //     None - Clears the new-post form without changing the saved local draft.
+  // Description: Resets all create-post fields while preserving stored draft data.
+  // Author: Keith Sialana
+  function clearNewPost() {
+    setDraft({ title: "", content: "", hidden: false, tags: [] });
+    setSelectedImages([]);
+    setDraftSaved(false);
+    setFormResetKey((key) => key + 1);
+    setAuthError("");
   }
 
   // Name: savePost
@@ -141,10 +285,24 @@ export default function Blog({ isAdmin }) {
         await createPost(post, selectedImages);
       }
 
+      let draftCleanupError = "";
+      if (!editingId) {
+        try {
+          window.localStorage.removeItem(postDraftStorageKey);
+        } catch (error) {
+          draftCleanupError =
+            error.message || "Unable to clear the saved local draft.";
+        }
+      }
       setEditorOpen(false);
       setEditingId(null);
       setSelectedImages([]);
       setRefreshKey((key) => key + 1);
+      if (draftCleanupError) {
+        setAuthError(
+          `Post saved, but the local draft could not be cleared: ${draftCleanupError}`
+        );
+      }
     } catch (error) {
       setAuthError(error.message || "Unable to save the post.");
     } finally {
@@ -200,18 +358,27 @@ export default function Blog({ isAdmin }) {
         >
           <PostEditor
             draft={draft}
-            onDraftChange={setDraft}
+            onDraftChange={(nextDraft) => {
+              setDraft(nextDraft);
+              setDraftSaved(false);
+            }}
             tags={tags}
             tagsLoading={tagsLoading}
             tagsError={tagsError}
             selectedImages={selectedImages}
             onImagesChange={(files, error) => {
               setSelectedImages(files);
+              setDraftSaved(false);
               setAuthError(error);
             }}
             saving={saving}
+            savingDraft={savingDraft}
+            draftSaved={draftSaved}
+            formResetKey={formResetKey}
             isEditing={Boolean(editingId)}
             onSubmit={savePost}
+            onSaveDraft={saveDraft}
+            onClear={clearNewPost}
             onCancel={() => {
               if (saving) return;
               setEditorOpen(false);
