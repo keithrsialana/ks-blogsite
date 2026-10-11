@@ -168,3 +168,5 @@ The email check in the interface only controls which editor controls are shown. 
 | `npm run build` | Create a production build in `dist/`. |
 | `npm run preview` | Preview the production build locally. |
 | `npm run lint` | Run ESLint. |
+
+Netlify should publish the `dist/` directory. The `public/_redirects` file is copied into the production build and routes requests for client-side paths such as `/blog` to `index.html`, so direct visits and page refreshes work.
